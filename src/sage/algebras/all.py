@@ -30,6 +30,7 @@ from .free_algebra import FreeAlgebra
 from .free_algebra_quotient import FreeAlgebraQuotient
 
 from .steenrod.all import *
+from .brown_peterson.all import *
 from .lie_algebras.all import *
 from .quantum_groups.all import *
 
