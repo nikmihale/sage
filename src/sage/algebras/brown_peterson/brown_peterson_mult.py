@@ -3,7 +3,7 @@ import math
 from sage.all import *
 
 def multiplication(left,right,ring):
-
+	p = ring.base().prime()
 	def _cell_decompose(lst):
 		for run_coord in range(len(lst)):
 			for thing in lst[run_coord:]:
@@ -15,9 +15,9 @@ def multiplication(left,right,ring):
 			for j in range(yaxis):
 				h=0
 				if M[h][i][j] > 1:
-					for k in range(int(math.log(M[h][i][j],2))):
+					for k in range(int(math.log(M[h][i][j], p))):
 						# temp += [(k,i,j)] * int( math.log( M[h][i][j], 2 )  * 2**(-k) ) #really?
-						temp += [(k,i,j)] * int( M[h][i][j]* 2**(-(k+1)) )
+						temp += [(k,i,j)] * int( M[h][i][j]* p**(-(k+1)) )
 		#remove duplicates
 		res = []
 		for x in list(_cell_decompose(temp)):
@@ -29,11 +29,11 @@ def multiplication(left,right,ring):
 		if lst[coord] <= 1:
 			yield []
 		for run_coord in range(coord,len(lst)):
-			if lst[run_coord] >= 2:
+			if lst[run_coord] >= p:
 				temp = [0]*len(lst)
 				for i in range(len(lst)):
 					temp[i] = lst[i]
-				temp[run_coord] -= 2
+				temp[run_coord] -= p
 				temp[run_coord + 1] += 1
 				for dec in _decompose(temp,run_coord):
 					yield [tuple(temp)] + dec
@@ -50,8 +50,8 @@ def multiplication(left,right,ring):
 	def _create_pair(lst):
 		length = 0
 		for i in range(len(lst)):
-			length += lst[i]*2**i
-		length = int(math.log(length,2) + 1)
+			length += lst[i]*p**i
+		length = int(math.log(length,p) + 1)
 
 		pair = [0]*length
 		for i in range(length):
@@ -92,29 +92,14 @@ def multiplication(left,right,ring):
 					yield MMM
 
 
-	# left = list(left)
-	# right = list(right)
 	result = {}
 	xaxis = len(left) + 1
 	yaxis = len(right) + 1
-	zaxis = int(math.log(max(max(left),max(right)),2)) + 1
+	zaxis = int(math.log(max(max(left),max(right)), p)) + 1
 	diags = xaxis + yaxis + zaxis - 3
 	
-	# bad coefficient choice:
-	# m_i are the complex cobordism class of the complex projective space of desired dimension
-	# but not these generators 
-	# T = TermOrder("wdeglex", (1,2))
-	# sage: R = PolynomialRing(QQ, 'x,y', order=T)
-	# if diags > len(R.gens()):
-	# 	T = TermOrder("wdeglex", [2**x-1 for x in range(1,diags)])
-	# 	R = PolynomialRing(Zp(2,prec=3), diags-1, 'm', order=T)
-	# 	print('should change ring to', R)
-		
-	# T = TermOrder("wdeglex", [2**x-1 for x in range(1,diags)])
-	# R = PolynomialRing(Zp(2,prec=3), diags-1, 'm', order=T)
+	
 	generators = [ring.one()] + list(ring.gens())
-	# generators[0] 
-	# generators = list(generators)
 	generators = tuple(generators)
 
 	
@@ -132,7 +117,7 @@ def multiplication(left,right,ring):
 		for j in range(1,yaxis):
 			M[0][i][j] = 0
 	
-	Mbackup =deepcopy(M)
+	Mbackup = deepcopy(M)
 	
 
 	cells = _analysis(M,xaxis,yaxis,zaxis)
@@ -224,18 +209,18 @@ def multiplication(left,right,ring):
 			for cell in cells: 
 				if not found_vary:
 					
-					for i in range(xaxis):
-						for j in range(yaxis):
-							for h in range(zaxis):
-								M[h][i][j] = Mbackup[h][i][j]
-					
+					# for i in range(xaxis):
+						# for j in range(yaxis):
+							# for h in range(zaxis):
+								# M[h][i][j] = Mbackup[h][i][j]
+					M = deepcopy(Mbackup)
 					for elem in cell:
 						found_vary = False
 						h,i,j = elem
-						if M[h][i][j] >= 2:
+						if M[h][i][j] >= p:
 							found_vary = True
 							M[h+1][i][j] += 1
-							M[h][i][j] -= 2
+							M[h][i][j] -= p
 					if found_vary == True:
 						ind = cells.index(cell)
 						break
@@ -245,17 +230,17 @@ def multiplication(left,right,ring):
 
 		if not found_new and not found_vary :
 			# M = Mbackup    
-			for h in range(zaxis):
-				for i in range(xaxis):
-					for j in range(yaxis):
-						M[h][i][j] = Mbackup[h][i][j]
-
+			# for h in range(zaxis):
+				# for i in range(xaxis):
+					# for j in range(yaxis):
+						# M[h][i][j] = Mbackup[h][i][j]
+			M = deepcopy(Mbackup)
 		j = 1
 		while not found_new and not found_vary and j < yaxis:
 			sum = M[0][0][j]
 			i = 1
 			while not found_new and i < xaxis:
-				if sum >= 2**i:
+				if sum >= p**i:
 					temp_sum = 0
 					for k in range(j):
 						temp_sum += M[0][i][k]
@@ -275,16 +260,17 @@ def multiplication(left,right,ring):
 
 						M[0][i][0] = M[0][i][0] - 1
 						M[0][i][j] = M[0][i][j] + 1
-						M[0][0][j] = sum - 2**i
+						M[0][0][j] = sum - p**i
 						cells = _analysis(M,xaxis,yaxis,zaxis)
-						for h in range(zaxis):
-							for i in range(xaxis):
-								for j in range(yaxis):
-									Mbackup[h][i][j] = M[h][i][j]
+						# for h in range(zaxis):
+							# for i in range(xaxis):
+								# for j in range(yaxis):
+									# Mbackup[h][i][j] = M[h][i][j]
+						Mbackup = deepcopy(M)
 					else:
-						sum = sum + M[0][i][j] * 2**i
+						sum = sum + M[0][i][j] * p**i
 				else:
-					sum = sum + M[0][i][j] * 2**i
+					sum = sum + M[0][i][j] * p**i
 				i = i + 1
 			j = j + 1
 	return result
