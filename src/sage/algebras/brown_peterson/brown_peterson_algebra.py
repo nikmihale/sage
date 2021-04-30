@@ -2,13 +2,11 @@ from sage.all import *
 from sage.combinat.free_module import CombinatorialFreeModule
 
 
-#sholud be a generic as well
-class BrownPetersonAlgebra_generic(CombinatorialFreeModule):
-
+class GenericBrownPetersonAlgebra(CombinatorialFreeModule):
     @staticmethod
     def __classcall__(self, p=2, n=2):
-        return super(BrownPetersonAlgebra_generic, self).__classcall__(self, p=p, n=n)
-    
+        return super(GenericBrownPetersonAlgebra, self).__classcall__(self, p=p, n=n)
+
     def __init__(self, p=2, n=2):
         """
         
@@ -20,34 +18,24 @@ class BrownPetersonAlgebra_generic(CombinatorialFreeModule):
         from sage.categories.graded_hopf_algebras_with_basis import GradedHopfAlgebrasWithBasis
         from functools import partial
         from .brown_peterson_bases import BP_basis
-        import itertools
         if not is_prime(p):
             raise ValueError("%s is not prime." % p)
         self._prime = p
-
         # This would allow infinite rings with weights (lambda is to be taken from input)
         # degrees=itertools.chain((lambda x: 2*(p**x - 1))(t) for t in IntegerRange(Integer(0),Infinity))
         # R=PolynomialRing(ZZ,n,names='m',order=TermOrder('wdeglex',[t for (i,t) in zip(range(n),degrees)]))
         # for h in R.gens():print(h,h.degree())
-
-        _variables = ['m_%s' % k for k in range(1,n+1)]
-        _T=TermOrder("wdeglex",[2* ( self._prime **t - 1) for t in range(1,n+1)])
+        _variables = ['m_%s' % k for k in range(1, n+1)]
+        _T = TermOrder("wdeglex", [2 * (self._prime ** t - 1) for t in range(1, n+1)])
         base_ring = PolynomialRing(Zp(self._prime, prec=5), _variables, order=_T, implementation='generic')
         basis_category = InfiniteEnumeratedSets()
         basis_set = EnumeratedSetFromIterator(self.basis_key_iterator,
                                               category=basis_category,
                                               name="basis key family of %s" % self,
                                               cache=False)
-        self._basis_func = partial(BP_basis,
-                                   p=p)
+        self._basis_func = partial(BP_basis, p=p)
         cat = GradedHopfAlgebrasWithBasis(base_ring)
-        # cat=SupeHopfAlgebrasWithBasis(base_ring).Graded
-        CombinatorialFreeModule.__init__(self, 
-                                        base_ring,
-                                        basis_set,
-                                        element_class=self.Element,
-                                        category=cat,
-                                        scalar_mult=' ')
+        CombinatorialFreeModule.__init__(self, base_ring, basis_set, element_class=self.Element, category=cat, scalar_mult=' ')
 
 
     def basis_key_iterator(self):
@@ -73,7 +61,7 @@ class BrownPetersonAlgebra_generic(CombinatorialFreeModule):
 
     def _repr_(self):
         return "Brown-Peterson algebra over %s" % self.base_ring()
-    
+
     def _latex_(self):
         # TODO
         return None
@@ -87,7 +75,7 @@ class BrownPetersonAlgebra_generic(CombinatorialFreeModule):
 
     def _latex_term(self, t):
         import re
-        s = self._repr_term(t)  
+        s = self._repr_term(t)
         s = re.sub(r"([(][0-9,]*[)])",r"_{\1}", s)
         s = s.replace("r", "\\text{r}")
         return s
@@ -112,9 +100,9 @@ class BrownPetersonAlgebra_generic(CombinatorialFreeModule):
         # transfer elements into new algebra with extended ring
         # only then multiply elements
         product_degree = self.degree_on_basis(left, self.prime()) + self.degree_on_basis(right, self.prime())
-        
+
         if len(self.base_ring().gens()) < 1 + Integer(product_degree // 2).exact_log(self.prime()): # boy what
-            A = BrownPetersonAlgebra_generic(p=self.prime() ,n=(1 + Integer(product_degree // 2).exact_log(self.prime())))
+            A = GenericBrownPetersonAlgebra(p=self.prime(), n=(1 + Integer(product_degree // 2).exact_log(self.prime())))
             return A.product_on_basis(left,right)
 
         from .brown_peterson_mult import multiplication
@@ -147,7 +135,7 @@ class BrownPetersonAlgebra_generic(CombinatorialFreeModule):
         from sage.rings.infinity import Infinity
         if self.base_ring().has_coerce_map_from(S):
             return True
-        if (isinstance(S, BrownPetersonAlgebra_generic) and self.prime() == S.prime()):
+        if (isinstance(S, GenericBrownPetersonAlgebra) and self.prime() == S.prime()):
             return self.base_ring().has_coerce_map_from(S.base_ring())
         if (isinstance(S, CombinatorialFreeModule) and S.dimension() < Infinity):
             return self.base_ring().has_coerce_map_from(S.base_ring())
@@ -201,7 +189,7 @@ class BrownPetersonAlgebra_generic(CombinatorialFreeModule):
                 assert Integer(i) >= 0
             except (TypeError, AssertionError):
                 raise TypeError("entries must be non-negative integers")
-        R = BrownPetersonAlgebra_generic(p=self.prime())
+        R = GenericBrownPetersonAlgebra(p=self.prime())
         a = R.monomial(nums)
         return self(a)
 
@@ -216,7 +204,7 @@ class BrownPetersonAlgebra_generic(CombinatorialFreeModule):
 
     class Element(CombinatorialFreeModule.Element):
         def prime(self):
-            return self.base_ring().base_ring().prime()        
+            return self.base_ring().base_ring().prime()
 
         def is_homogeneous(self):
             monos = self.support()
@@ -248,7 +236,7 @@ class BrownPetersonAlgebra_generic(CombinatorialFreeModule):
 
         def is_unit(self):
             return self.parent().one() in self.monimials()
-        
+
         def is_nilpotent(self):
             # I dont know
             return None
@@ -256,7 +244,7 @@ class BrownPetersonAlgebra_generic(CombinatorialFreeModule):
 
 
 def BrownPetersonAlgebra(p=2, **kwds):
-    return BrownPetersonAlgebra_generic(p=p, **kwds)
+    return GenericBrownPetersonAlgebra(p=p, **kwds)
 
 # def r(*nums):
 #     return BrownPetersonAlgebra(p=2).r(*nums)
